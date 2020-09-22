@@ -1,0 +1,8 @@
+--- cura.sh     2020-09-22 13:57:03.551554245 -0600
++++ curaPatch.sh        2020-09-22 13:57:50.649686502 -0600
+@@ -11,4 +11,4 @@
+ # Use the openssl.cnf packaged in the AppImage
+ export OPENSSL_CONF="$scriptdir/openssl.cnf"
+ 
+-cura "$@"
++cura "--headless"
