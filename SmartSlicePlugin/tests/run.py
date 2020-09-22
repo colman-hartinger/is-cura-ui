@@ -75,12 +75,10 @@ if __name__ == "__main__":
         # TODO use prog.result to take appropriate action based off the results
 
         app.closeApplication()
-        app.exit()
-
-    app.applicationRunning.connect(unittest_fire)
 
     # Before running the app, start the unit tests in a thread
     unittest_thread = threading.Thread(target=unittest_wait_and_run)
     unittest_thread.start()
 
+    app.applicationRunning.connect(unittest_fire)
     app.run()
