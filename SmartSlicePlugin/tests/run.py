@@ -4,6 +4,8 @@ import threading
 import time
 import unittest
 
+from SmartSliceTestCase import _SmartSliceTestCase
+
 from UM.Platform import Platform
 from UM.PluginRegistry import PluginRegistry
 
@@ -39,16 +41,6 @@ def cura_app_mock():
     sys.argv.append("--headless")
 
     return CuraApplication()
-
-
-class _SmartSliceTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.app = CuraApplication.getInstance()
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
 
 class SmartSliceLoads(_SmartSliceTestCase):
     def test_plugin_path(self):

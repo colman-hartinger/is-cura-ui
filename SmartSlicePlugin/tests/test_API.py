@@ -1,24 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
+from UM.PluginRegistry import PluginRegistry
 from UM.Application import Application
 
+from SmartSliceTestCase import _SmartSliceTestCase
 from ..SmartSliceCloudConnector import SmartSliceAPIClient
-
-class SmartSliceTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
 
 class MockThor():
     def init(self):
@@ -42,10 +29,11 @@ class MockThor():
     def get_token(self):
         return self._token
 
-class SmartSliceAPITest(SmartSliceTestCase):
+class SmartSliceAPITest(_SmartSliceTestCase):
     @classmethod
     def setUpClass(cls):
-        cls._api = SmartSliceAPIClient()
+        pluginObject = PluginRegistry.getPluginObject("SmartSlice")
+        cls._api = SmartSliceAPIClient(pluginObject.cloud)
         cls._api._client = MockThor()
 
         #cls._preferences = Application.getInstance().getPreferences()
