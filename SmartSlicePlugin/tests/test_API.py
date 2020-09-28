@@ -5,7 +5,7 @@ from UM.PluginRegistry import PluginRegistry
 from UM.Application import Application
 
 from SmartSliceTestCase import _SmartSliceTestCase
-from ..SmartSliceCloudConnector import SmartSliceAPIClient
+#from SmartSliceCloudConnector import SmartSliceAPIClient
 
 class MockThor():
     def init(self):
@@ -29,7 +29,7 @@ class MockThor():
     def get_token(self):
         return self._token
 
-class SmartSliceAPITest(_SmartSliceTestCase):
+class test_API(_SmartSliceTestCase):
     @classmethod
     def setUpClass(cls):
         pluginObject = PluginRegistry.getPluginObject("SmartSlice")
@@ -59,6 +59,16 @@ class SmartSliceAPITest(_SmartSliceTestCase):
         self._api._login()
 
         self.assertFalse(self._api.badCredentials)
+        self.assertEqual(self._api._login_password, "")
+        self.assertEqual(self._api._app_preferences.getValue(self._api._username_preference), self._api._login_username)
+        self.assertEqual(self._api._token, "good")
+
+    def test_1_login_failure(self):
+        self._api._login_username = "bad@email.com"
+        self._api._login_password = "nopass"
+        self._api._login()
+
+        self.assertTrue(self._api.badCredentials)
         self.assertEqual(self._api._login_password, "")
         self.assertEqual(self._api._app_preferences.getValue(self._api._username_preference), self._api._login_username)
         self.assertEqual(self._api._token, "good")
