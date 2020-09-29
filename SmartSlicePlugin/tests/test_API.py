@@ -5,7 +5,6 @@ from UM.PluginRegistry import PluginRegistry
 from UM.Application import Application
 
 from SmartSliceTestCase import _SmartSliceTestCase
-#from SmartSliceCloudConnector import SmartSliceAPIClient
 
 class MockThor():
     def init(self):
@@ -32,7 +31,9 @@ class MockThor():
 class test_API(_SmartSliceTestCase):
     @classmethod
     def setUpClass(cls):
-        pluginObject = PluginRegistry.getPluginObject("SmartSlice")
+        from SmartSlicePlugin.SmartSliceCloudConnector import SmartSliceAPIClient
+
+        pluginObject = PluginRegistry.getInstance().getPluginObject("SmartSlicePlugin")
         cls._api = SmartSliceAPIClient(pluginObject.cloud)
         cls._api._client = MockThor()
 
