@@ -65,11 +65,7 @@ if __name__ == "__main__":
             time.sleep(0.1)
 
         plugins = PluginRegistry.getInstance()
-        testL = unittest.TestLoader()
-        testL.testMethodPrefix = "test_"
-        testL.discover(plugins.getPluginPath("SmartSlicePlugin")+"/tests", pattern="test_*.py")
-        testL.loadTestsFromModule("test_API.py", "test_*")
-        prog = unittest.main(testLoader=testL, exit=False, verbosity=2, argv=[sys.argv[0]])
+        prog = unittest.main(exit=False, verbosity=2, argv=[sys.argv[0]])
 
         # TODO use prog.result to take appropriate action based off the results
 
