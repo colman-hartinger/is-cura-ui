@@ -67,9 +67,11 @@ if __name__ == "__main__":
         plugins = PluginRegistry.getInstance()
         prog = unittest.main(exit=False, verbosity=2, argv=[sys.argv[0]])
 
-        # TODO use prog.result to take appropriate action based off the results
-
         app.closeApplication()
+
+        # TODO use prog.result to take appropriate action based off the results
+        if prog.result.errors != [] or prog.result.failures != []:
+            raise Exception("Tests Failed!")
 
     # Before running the app, start the unit tests in a thread
     unittest_thread = threading.Thread(target=unittest_wait_and_run)
