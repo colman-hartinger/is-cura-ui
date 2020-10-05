@@ -1,0 +1,14 @@
+name: Smart Slice Tests
+
+on:
+  push:
+
+jobs:
+  build:
+    container: tetonsim/smartslicetests
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout SmartSlice
+      uses: actions/checkout@v2
+    - name: test 1
+      run: ./run_in_docker.sh
