@@ -11,4 +11,6 @@ jobs:
     - name: Checkout SmartSlice
       uses: actions/checkout@v2
     - name: test 1
-      run: ./run_in_docker.sh
+      run: |
+        chmod +x run_in_docker.sh
+        ./run_in_docker.sh
