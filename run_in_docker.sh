@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-git clone https://github.com/tetonsim/pywim.git
-git clone https://github.com/tetonsim/py3mf.git
-mv pywim/pywim SmartSlicePlugin/3rd-party/cpython-common
-mv py3mf/threemf SmartSlicePlugin/3rd-party/cpython-common
+
+# UNCOMMENT FOR A SPECIFIC BRANCH OF PYWIM/PY3MF
+#git clone https://github.com/tetonsim/pywim.git
+#git clone https://github.com/tetonsim/py3mf.git
+#mv pywim/pywim SmartSlicePlugin/3rd-party/cpython-common
+#mv py3mf/threemf SmartSlicePlugin/3rd-party/cpython-common
 
 git clone -b 4.6 --single-branch  https://github.com/Ultimaker/Cura.git
 mv SmartSlicePlugin Cura/plugins
 
-python3 -m pip install PyQt5==5.10
+python3 -m pip install PyQt5==5.10  teton-3mf teton-pywim
 
 # shellcheck disable=SC2164
 cd Cura
