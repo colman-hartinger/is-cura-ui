@@ -128,8 +128,6 @@ class test_API(_SmartSliceTestCase):
         cls._api = SmartSliceAPIClient(mockConnector)
         cls._api._client = MockThor()
 
-        #cls._preferences = Application.getInstance().getPreferences()
-
     @classmethod
     def tearDownClass(cls):
         pass
@@ -233,7 +231,6 @@ class test_API(_SmartSliceTestCase):
         self.assertEqual(subscription, "inactive")
 
     def test_09_submit_job_success(self):
-        #JobStatusTracker = MagicMock(MagicMock())
         job = MockJob()
         job.canceled = False
         job_data = object
