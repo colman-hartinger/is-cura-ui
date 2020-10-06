@@ -19,7 +19,11 @@ jobs:
         echo this is something
         cd /srv
         ls
+        echo another thing
         cd cura
+        ls
+        echo thing
+        cd Cura
         ls
         
 #       run: |
