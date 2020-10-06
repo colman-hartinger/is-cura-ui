@@ -9,13 +9,18 @@ from UM.i18n import i18nCatalog
 from UM.Application import Application
 from UM.Extension import Extension
 from UM.PluginRegistry import PluginRegistry
+from UM.Job import Job
+from UM.FileHandler.ReadFileJob import ReadFileJob
+from UM.Workspace.WorkspaceFileHandler import WorkspaceFileHandler
+from UM.Scene.SceneNode import SceneNode
+from UM.Message import Message
 
 from cura.CuraApplication import CuraApplication
 
 from .SmartSliceCloudConnector import SmartSliceCloudConnector
 from .SmartSliceCloudProxy import SmartSliceCloudProxy
 from .SmartSliceCloudStatus import SmartSliceCloudStatus
-from .utils import getPrintableNodes
+from .utils import getPrintableNodes, getModifierMeshes, intersectingNodes
 
 import pywim
 
@@ -58,6 +63,7 @@ class SmartSliceExtension(Extension):
         controller = Application.getInstance().getController()
         controller.getScene().getRoot().childrenChanged.connect(self._reset)
 
+        Application.getInstance().engineCreatedSignal.connect(self._onEngineCreated)
 
         # Data storage location for workspaces - this is where we store our data for saving to the Cura project
         self._storage = Application.getInstance().getWorkspaceMetadataStorage()
@@ -73,6 +79,9 @@ class SmartSliceExtension(Extension):
         # The handle to the class which does all of the checks on application exit. Add our function to the callback list
         self._exitManager = CuraApplication.getInstance().getOnExitCallbackManager()
         self._exitManager.addCallback(self._saveOnExit)
+
+    def _onEngineCreated(self):
+        Application.getInstance()._job_queue.jobStarted.connect(self._workspaceLoading)
 
     @staticmethod
     def _openHelp():
@@ -184,10 +193,19 @@ class SmartSliceExtension(Extension):
         if cloudJob:
             job.type = cloudJob.job_type
 
+        # Reset the status if we're saving during a run. In the future, we should try to pull
+        # down the results when the user opens a project which was in the middle of running
+        status = self.cloud.status
+        if status in SmartSliceCloudStatus.busy():
+            if job.type == pywim.smartslice.job.JobType.validation:
+                status = SmartSliceCloudStatus.ReadyToVerify
+            else:
+                status = self.cloud.getProxy().optimizationStatus()
+
         # Place the job in the metadata under our plugin ID
         self._storage.setEntryToStore(plugin_id=self.metadata.id, key='job', data=job.to_dict())
         self._storage.setEntryToStore(plugin_id=self.metadata.id, key='version', data=self.metadata.version)
-        self._storage.setEntryToStore(plugin_id=self.metadata.id, key='status', data=self.cloud.status.value)
+        self._storage.setEntryToStore(plugin_id=self.metadata.id, key='status', data=status.value)
 
         # Need to do some checks to see if we've stored the results for the active job
         if cloudJob and cloudJob.getResult():
@@ -211,6 +229,11 @@ class SmartSliceExtension(Extension):
         if len(all_data) == 0:
             return
 
+        # Send the user back to Prepare if they are in Smart Slice
+        controller = Application.getInstance().getController()
+        if controller.getActiveStage() and controller.getActiveStage().getPluginId() == self.metadata.id:
+            controller.setActiveStage("PrepareStage")
+
         job_dict = all_data['job']
         status = all_data['status']
         results_dict = all_data.get('results', None)
@@ -225,6 +248,7 @@ class SmartSliceExtension(Extension):
         def afterSmartSliceNodeInit():
             if status:
                 self.cloud.status = SmartSliceCloudStatus(status)
+
             else:
                 self.proxy.updateStatusFromResults(job, results)
                 self.cloud.updateStatus()
@@ -252,6 +276,12 @@ class SmartSliceExtension(Extension):
         if len(getPrintableNodes()) == 0:
             self._storage.getPluginMetadata(self.metadata.id).clear()
 
+    def _workspaceLoading(self, job: Job):
+        if isinstance(job, ReadFileJob):
+            if job._handler and isinstance(job._handler, WorkspaceFileHandler):
+                self._storage.getPluginMetadata(self.metadata.id).clear()
+                self.cloud.propertyHandler.resetProperties()
+                self.cloud.status = SmartSliceCloudStatus.Errors
 
 class PluginMetaData:
     def __init__(self):

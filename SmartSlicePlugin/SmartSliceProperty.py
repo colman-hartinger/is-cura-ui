@@ -9,11 +9,14 @@ from UM.Operations.AddSceneNodeOperation import AddSceneNodeOperation
 from UM.Operations.RemoveSceneNodeOperation import RemoveSceneNodeOperation
 from UM.Operations.GroupedOperation import GroupedOperation
 
+from cura.Scene.CuraSceneNode import CuraSceneNode
 from cura.CuraApplication import CuraApplication
 from cura.Machines.QualityGroup import QualityGroup
+from cura.Scene.ZOffsetDecorator import ZOffsetDecorator
 
 from .SmartSliceDecorator import SmartSliceRemovedDecorator, SmartSliceAddedDecorator
-from . utils import getPrintableNodes, getNodeActiveExtruder, getModifierMeshes
+from .utils import getPrintableNodes, getNodeActiveExtruder, getModifierMeshes
+from .utils import intersectingNodes
 from .stage.SmartSliceScene import HighlightFace, LoadFace, Root
 
 class SmartSlicePropertyColor():
@@ -49,6 +52,7 @@ class ContainerProperty(TrackedProperty):
     def __init__(self, name):
         self.name = name
         self._cached_value = None
+        self._cached_state = None
 
     @classmethod
     def CreateAll(cls) -> List['ContainerProperty']:
@@ -56,8 +60,12 @@ class ContainerProperty(TrackedProperty):
             map( lambda n: cls(n), cls.NAMES )
         )
 
+    def state(self):
+        raise NotImplementedError()
+
     def cache(self):
         self._cached_value = self.value()
+        self._cached_state = self.state()
 
     def changed(self) -> bool:
         return self._cached_value != self.value()
@@ -79,12 +87,20 @@ class GlobalProperty(ContainerProperty):
             return machine.getProperty(self.name, "value")
         return None
 
+    def state(self):
+        machine, extruder = self._getMachineAndExtruder()
+        if machine:
+            return machine.getProperty(self.name, "state")
+        return None
+
     def restore(self):
         machine, extruder = self._getMachineAndExtruder()
         if machine and self._cached_value and self._cached_value != self.value():
             machine.setProperty(self.name, "value", self._cached_value, set_from_cache=True)
-            machine.setProperty(self.name, "state", InstanceState.Default, set_from_cache=True)
+            if self._cached_state == InstanceState.User:
+                machine.setProperty(self.name, "state", self._cached_state, set_from_cache=True)
 
+            CuraApplication.getInstance().getMachineManager().activeStackValueChanged.emit()
 
 class ExtruderProperty(ContainerProperty):
     EXTRUDER_KEYS = [
@@ -128,11 +144,21 @@ class ExtruderProperty(ContainerProperty):
             return extruder.getProperty(self.name, "value")
         return None
 
+    def state(self):
+        machine, extruder = self._getMachineAndExtruder()
+        if extruder:
+            return extruder.getProperty(self.name, "state")
+        return None
+
     def restore(self):
         machine, extruder = self._getMachineAndExtruder()
         if extruder and self._cached_value and self._cached_value != self.value():
             extruder.setProperty(self.name, "value", self._cached_value, set_from_cache=True)
-            extruder.setProperty(self.name, "state", InstanceState.Default, set_from_cache=True)
+
+            if self._cached_state == InstanceState.User:
+                extruder.setProperty(self.name, "state", self._cached_state, set_from_cache=True)
+
+            CuraApplication.getInstance().getMachineManager().activeStackValueChanged.emit()
 
 class ActiveQualityGroup(TrackedProperty):
     def __init__(self):
@@ -250,31 +276,42 @@ class SelectedMaterialVariant(TrackedProperty):
         return self._cached_material_variant != self.value()
 
 class Transform(TrackedProperty):
-    def __init__(self, node=None):
+    def __init__(self, node: CuraSceneNode = None):
         self._node = node
+        self._intersecting_nodes = []
         self._scale = None
         self._orientation = None
+        self._position = None
+        self._z_offset = None
 
     def value(self):
         if self._node:
-            return self._node.getScale(), self._node.getOrientation()
-        return None, None
+            return self._node.getScale(), self._node.getOrientation(), self._node.getPosition(), \
+                self._node.getDecorator(ZOffsetDecorator), intersectingNodes(self._node)
+        return None, None, None, None, []
 
     def cache(self):
-        self._scale, self._orientation = self.value()
+        self._scale, self._orientation, self._position, self._z_offset, self._intersecting_nodes = self.value()
 
     def restore(self):
         if self._node:
             self._node.setScale(self._scale)
             self._node.setOrientation(self._orientation)
+            self._node.setPosition(self._position)
+            if self._z_offset:
+                self._node.addDecorator(self._z_offset)
+
             self._node.transformationChanged.emit(self._node)
 
     def changed(self) -> bool:
-        scale, orientation = self.value()
+        scale, orientation, position, z_offset, intersecting_nodes = self.value()
+        if intersecting_nodes != self._intersecting_nodes or len(intersecting_nodes) > 0:
+            return scale != self._scale or orientation != self._orientation or position != self._position
+
         return scale != self._scale or orientation != self._orientation
 
 class SceneNode(TrackedProperty):
-    def __init__(self, node=None, name=None):
+    def __init__(self, node: CuraSceneNode = None, name=None):
         self.parent_changed = False
         self.mesh_name = name
         self._node = node
@@ -355,7 +392,6 @@ class Scene(TrackedProperty):
             return False
 
         root, nodes = self.value()
-        _changed = False
 
         if self._root != root:
             return True
@@ -374,7 +410,7 @@ class Scene(TrackedProperty):
         root, nodes = self.value()
 
         for node in nodes:
-            if node not in self._nodes and not node.getDecorator(SmartSliceAddedDecorator):
+            if node not in self._nodes and node.getDecorator(SmartSliceAddedDecorator):
                 self._nodes.append(node)
 
         for node in self._nodes:

@@ -1,0 +1,20 @@
+name: Smart Slice Tests
+
+on:
+  push:
+
+jobs:
+  build:
+    container: tetonsim/smartslicetests:4.6
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout SmartSlice
+      uses: actions/checkout@v2
+    - name:  test 1
+      run: |
+        mv SmartSlicePlugin /srv/cura/Cura/plugins
+        python3 -m pip install PyQt5==5.10 teton-3mf teton-pywim
+        Xvfb :1.0 -screen 0 1280x800x16 &
+        export DISPLAY=:1.0
+        export QT_QPA_PLATFORM=offscreen
+        python3 /srv/cura/Cura/plugins/SmartSlicePlugin/tests/run.py

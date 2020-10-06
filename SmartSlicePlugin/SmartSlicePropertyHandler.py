@@ -112,6 +112,7 @@ class SmartSlicePropertyHandler(QObject):
         #  Attune to scene changes and mesh changes
         controller.getTool("ScaleTool").operationStopped.connect(self._onSceneNodeChanged)
         controller.getTool("RotateTool").operationStopped.connect(self._onSceneNodeChanged)
+        controller.getTool("TranslateTool").operationStopped.connect(self._onSceneNodeChanged)
 
         CuraApplication.getInstance().getExtruderManager().activeExtruderChanged.connect(self._onActiveExtruderChanged)
 
@@ -483,3 +484,5 @@ class SmartSlicePropertyHandler(QObject):
     def resetProperties(self):
         self.cacheChanges()
         self._propertiesChanged.clear()
+        if self._confirmDialog and self._confirmDialog.visible:
+            self._confirmDialog.hide()

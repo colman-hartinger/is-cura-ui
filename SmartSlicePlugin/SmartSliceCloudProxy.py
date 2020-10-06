@@ -21,6 +21,7 @@ from UM.Operations.RemoveSceneNodeOperation import RemoveSceneNodeOperation
 from UM.Operations.GroupedOperation import GroupedOperation
 from UM.Mesh.MeshBuilder import MeshBuilder
 from UM.Settings.SettingInstance import SettingInstance
+from UM.Settings.SettingInstance import InstanceState
 from UM.Scene.SceneNode import SceneNode
 from UM.Scene.GroupDecorator import GroupDecorator
 from UM.Operations.AddSceneNodeOperation import AddSceneNodeOperation
@@ -743,12 +744,12 @@ class SmartSliceCloudProxy(QObject):
         if job:
             if job.type == pywim.smartslice.job.JobType.validation:
                 if results:
-                    self.optimizationStatus()
+                    self._sliceStatusEnum = optimizationStatus()
                     self.sliceInfoOpen = True
                 else:
                     self._sliceStatusEnum = SmartSliceCloudStatus.ReadyToVerify
             else:
-                self.optimizationStatus()
+                self._sliceStatusEnum = optimizationStatus()
                 self.sliceInfoOpen = True
         else:
             self._sliceStatusEnum = SmartSliceCloudStatus.Errors
@@ -758,13 +759,22 @@ class SmartSliceCloudProxy(QObject):
     def optimizationStatus(self):
         req_tool = SmartSliceRequirements.getInstance()
         if req_tool.maxDisplacement > self.resultMaximalDisplacement and req_tool.targetSafetyFactor < self.resultSafetyFactor:
-            self._sliceStatusEnum = SmartSliceCloudStatus.Overdimensioned
+            return SmartSliceCloudStatus.Overdimensioned
         elif req_tool.maxDisplacement <= self.resultMaximalDisplacement or req_tool.targetSafetyFactor >= self.resultSafetyFactor:
-            self._sliceStatusEnum = SmartSliceCloudStatus.Underdimensioned
+            return SmartSliceCloudStatus.Underdimensioned
         else:
-            self._sliceStatusEnum = SmartSliceCloudStatus.Optimized
+            return SmartSliceCloudStatus.Optimized
 
     def updateSceneFromOptimizationResult(self, analysis: pywim.smartslice.result.Analysis):
+
+        type_map = {
+            'int': int,
+            'float': float,
+            'str': str,
+            'enum': str,
+            'bool': bool
+        }
+
         our_only_node =  getPrintableNodes()[0]
         active_extruder = getNodeActiveExtruder(our_only_node)
 
@@ -791,7 +801,12 @@ class SmartSliceCloudProxy(QObject):
 
             for key, value in extruder_dict.items():
                 if value is not None:
-                    active_extruder.setProperty(key, "value", value, set_from_cache=True)
+                    property_type = type_map.get(active_extruder.getProperty(key, "type"))
+                    if property_type:
+                        active_extruder.setProperty(
+                            key, "value", property_type(value), set_from_cache=True
+                        )
+                        active_extruder.setProperty(key, "state", InstanceState.User, set_from_cache=True)
 
             Application.getInstance().getMachineManager().forceUpdateAllSettings()
             self.optimizationResultAppliedToScene.emit()
@@ -799,11 +814,9 @@ class SmartSliceCloudProxy(QObject):
         # Remove any modifier meshes which are present from a previous result
         mod_meshes = getModifierMeshes()
         if len(mod_meshes) > 0:
-            op = GroupedOperation()
             for node in mod_meshes:
                 node.addDecorator(SmartSliceRemovedDecorator())
-                op.addOperation(RemoveSceneNodeOperation(node))
-            op.push()
+                our_only_node.removeChild(node)
             Application.getInstance().getController().getScene().sceneChanged.emit(node)
 
         # Add in the new modifier meshes
@@ -815,9 +828,7 @@ class SmartSliceCloudProxy(QObject):
             modifier_mesh_node.setCalculateBoundingBox(True)
 
             # Use the data from the SmartSlice engine to translate / rotate / scale the mod mesh
-            parent_transformation = our_only_node.getLocalTransformation()
-            modifier_mesh_transform_matrix = parent_transformation.multiply(Matrix(modifier_mesh.transform))
-            modifier_mesh_node.setTransformation(modifier_mesh_transform_matrix)
+            modifier_mesh_node.setTransformation(Matrix(modifier_mesh.transform))
 
             # Building the mesh
 
@@ -862,23 +873,16 @@ class SmartSliceCloudProxy(QObject):
             for key, value in definition_dict.items():
                 if value is not None:
                     definition = stack.getSettingDefinition(key)
-                    new_instance = SettingInstance(definition, settings)
-                    new_instance.setProperty("value", value)
+                    property_type = type_map.get(stack.getProperty(key, "type"))
+                    if property_type:
+                        new_instance = SettingInstance(definition, settings)
 
-                    new_instance.resetState()  # Ensure that the state is not seen as a user state.
-                    settings.addInstance(new_instance)
+                        new_instance.setProperty("value", property_type(value))
 
-            op = GroupedOperation()
-            # First add node to the scene at the correct position/scale, before parenting, so the eraser mesh does not get scaled with the parent
-            op.addOperation(AddSceneNodeOperation(
-                modifier_mesh_node,
-                Application.getInstance().getController().getScene().getRoot()
-            ))
-            op.addOperation(SetParentOperation(
-                modifier_mesh_node,
-                Application.getInstance().getController().getScene().getRoot()
-            ))
-            op.push()
+                        new_instance.resetState()  # Ensure that the state is not seen as a user state.
+                        settings.addInstance(new_instance)
+
+            our_only_node.addChild(modifier_mesh_node)
 
             # emit changes and connect error tracker
             Application.getInstance().getController().getScene().sceneChanged.emit(modifier_mesh_node)
