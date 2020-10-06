@@ -7,13 +7,13 @@ jobs:
   build:
     container: tetonsim/smartslicetests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        cura-version: [4.6]
+#    strategy:
+#      matrix:
+#        cura-version: [4.6]
     steps:
     - name: Checkout SmartSlice
       uses: actions/checkout@v2
-    - name:  Unit Tests ${{ matrix.cura-version }}
+    - name:  Unit Tests
       run: |
         chmod +x run_in_docker.sh
-        ./run_in_docker.sh ${{ matrix.cura-version }}
+        ./run_in_docker.sh
