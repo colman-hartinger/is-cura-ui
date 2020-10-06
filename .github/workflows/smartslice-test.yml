@@ -5,37 +5,16 @@ on:
 
 jobs:
   build:
-    container: tetonsim/smartslicetests:1.0
+    container: tetonsim/smartslicetests:4.6
     runs-on: ubuntu-latest
-#    strategy:
-#      matrix:
-#        cura-version: [4.6]
     steps:
     - name: Checkout SmartSlice
       uses: actions/checkout@v2
     - name:  test 1
       run: |
-        ls
-        echo this is something
-        cd /srv
-        ls
-        echo another thing
-        cd cura
-        ls
-        echo thing
-        cd Cura
-        ls
-        
-#       run: |
-#         git clone -b 4.6 --single-branch https://github.com/Ultimaker/Cura.git
-#         mv SmartSlicePlugin Cura/plugins
-
-#         python3 -m pip install PyQt5==5.10 teton-3mf teton-pywim
-
-#         cd Cura
-#         PYTHONPATH=${PYTHONPATH}:$(pwd)
-
-#         Xvfb :1.0 -screen 0 1280x800x16 &
-#         export DISPLAY=:1.0
-#         export QT_QPA_PLATFORM=offscreen
-#         python3 plugins/SmartSlicePlugin/tests/run.py
+        mv SmartSlicePlugin /srv/cura/Cura/plugins
+        python3 -m pip install PyQt5==5.10 teton-3mf teton-pywim
+        Xvfb :1.0 -screen 0 1280x800x16 &
+        export DISPLAY=:1.0
+        export QT_QPA_PLATFORM=offscreen
+        python3 /srv/cura/Cura/plugins/SmartSlicePlugin/tests/run.py
