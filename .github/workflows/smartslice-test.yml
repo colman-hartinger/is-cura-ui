@@ -16,7 +16,10 @@ jobs:
     - name:  test 1
       run: |
         ls
+        echo this is something
         cd /srv
+        ls
+        cd cura
         ls
         
 #       run: |
