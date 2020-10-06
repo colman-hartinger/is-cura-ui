@@ -13,7 +13,7 @@ jobs:
     steps:
     - name: Checkout SmartSlice
       uses: actions/checkout@v2
-    - name:  Unit Tests
+    - name:  Unit Tests ${{ matrix.cura-version }}
       run: |
         chmod +x run_unit_tests.sh
         ./run_unit_tests.sh ${{ matrix.cura-version }}
