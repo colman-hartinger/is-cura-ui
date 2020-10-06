@@ -6,10 +6,11 @@
 #mv pywim/pywim SmartSlicePlugin/3rd-party/cpython-common
 #mv py3mf/threemf SmartSlicePlugin/3rd-party/cpython-common
 
-git clone -b 4.6 --single-branch  https://github.com/Ultimaker/Cura.git
+# shellcheck disable=SC2046
+git clone -b $(1) --single-branch https://github.com/Ultimaker/Cura.git
 mv SmartSlicePlugin Cura/plugins
 
-python3 -m pip install PyQt5==5.10  teton-3mf teton-pywim
+python3 -m pip install PyQt5==5.10 teton-3mf teton-pywim
 
 # shellcheck disable=SC2164
 cd Cura
