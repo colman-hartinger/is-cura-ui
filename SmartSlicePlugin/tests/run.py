@@ -4,6 +4,8 @@ import threading
 import time
 import unittest
 
+from contextlib import redirect_stdout, redirect_stderr
+
 from SmartSliceTestCase import _SmartSliceTestCase
 
 from UM.Platform import Platform
@@ -65,11 +67,14 @@ if __name__ == "__main__":
             time.sleep(0.1)
 
         plugins = PluginRegistry.getInstance()
-        prog = unittest.main(exit=False, verbosity=2, argv=[sys.argv[0]])
+
+        print("\n", file = sys.__stderr__)
+        runner = unittest.TextTestRunner(stream=sys.__stdout__, verbosity=2)
+        prog = unittest.main(exit=False, testRunner=runner, verbosity=2, argv=[sys.argv[0]])
+        print("\n", file = sys.__stderr__)
 
         app.closeApplication()
 
-        # TODO use prog.result to take appropriate action based off the results
         if prog.result.errors != [] or prog.result.failures != []:
             raise Exception("Tests Failed!")
 
@@ -78,4 +83,7 @@ if __name__ == "__main__":
     unittest_thread.start()
 
     app.applicationRunning.connect(unittest_fire)
-    app.run()
+    null_out = open(os.devnull, 'w')
+    with redirect_stderr(null_out):
+        with redirect_stdout(null_out):
+            app.run()
