@@ -5,12 +5,15 @@ on:
 
 jobs:
   build:
-    container: tetonsim/smartslicetests
+    container: tetonsim/smartslicetests:1.0
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cura-version: [4.6]
     steps:
     - name: Checkout SmartSlice
       uses: actions/checkout@v2
-    - name: test 1
+    - name:  Unit Tests ${{ matrix.cura-version }}
       run: |
-        chmod +x run_in_docker.sh
-        ./run_in_docker.sh
+        chmod +x run_unit_tests.sh
+        ./run_unit_tests.sh ${{ matrix.cura-version }}
