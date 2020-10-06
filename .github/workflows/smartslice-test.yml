@@ -15,5 +15,5 @@ jobs:
       uses: actions/checkout@v2
     - name:  Unit Tests
       run: |
-        chmod +x run_in_docker.sh
+        chmod +x run_unit_tests.sh
         ./run_unit_tests.sh ${{ matrix.cura-version }}
