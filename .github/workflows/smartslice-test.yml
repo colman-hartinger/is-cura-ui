@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    container: tetonsim/smartslicetests:1.0
+    container: tetonsim/smartslicetests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,5 +15,5 @@ jobs:
       uses: actions/checkout@v2
     - name:  Unit Tests ${{ matrix.cura-version }}
       run: |
-        chmod +x run_unit_tests.sh
-        ./run_unit_tests.sh ${{ matrix.cura-version }}
+        chmod +x run_in_docker.sh
+        ./run_in_docker.sh ${{ matrix.cura-version }}
