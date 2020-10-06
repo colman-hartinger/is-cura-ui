@@ -16,4 +16,4 @@ jobs:
     - name:  Unit Tests ${{ matrix.cura-version }}
       run: |
         chmod +x run_unit_tests.sh
-        ./run_unit_tests.sh ${{ matrix.cura-version }}
+        ./run_unit_tests.sh
