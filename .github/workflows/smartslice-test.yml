@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    container: tetonsim/smartslicetests:latest:1.0
+    container: tetonsim/smartslicetests:1.0
     runs-on: ubuntu-latest
 #    strategy:
 #      matrix:
