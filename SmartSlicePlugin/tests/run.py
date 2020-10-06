@@ -83,7 +83,7 @@ if __name__ == "__main__":
     unittest_thread.start()
 
     app.applicationRunning.connect(unittest_fire)
-    null_out = open(os.devnull, 'w')
-    with redirect_stderr(null_out):
-        with redirect_stdout(null_out):
-            app.run()
+    # null_out = open(os.devnull, 'w')
+    # with redirect_stderr(null_out):
+    #     with redirect_stdout(null_out):
+    app.run()
